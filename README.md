@@ -13,6 +13,7 @@ Video: https://youtu.be/rx9HhBPh8zg
 
 - openai
 - discord
+- python-docx
 
 ### Open config.ini and change the following values:
 
