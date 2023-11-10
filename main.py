@@ -12,6 +12,7 @@ import json
 import urllib
 import urllib.request
 import discord
+from docx import Document
 from openai import OpenAI
 from configparser import ConfigParser
 from discord import app_commands
@@ -54,17 +55,21 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "create_python_script",
-            "description": "creates and returns a python script as a main.py file",
+            "name": "create_text_file",
+            "description": "creates and returns a text file. Used for documents, texts or code/script files",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "prompt": {
                         "type": "string",
-                        "description": "prompt for the script to be created"
+                        "description": "prompt for the text to be created"
+                    },
+                    "file_type": {
+                        "type": "string",
+                        "description": "file extension to use. Example: .py, .docx, .txt"
                     }
                 },
-                "required": ["prompt"],
+                "required": ["prompt", "file_type"],
             },
         },
     },
@@ -112,20 +117,26 @@ def create_voice_message(prompt):
     return full_path
 
 
-def create_python_script(prompt):
+def create_text_file(prompt, file_type):
     response = ai.chat.completions.create(
         model="gpt-4-1106-preview",
         messages=[
-            {"role": "system", "content": "Only respond with the generated code, formatted for a .py file."},
+            {"role": "system", "content": "Only respond with the generated text or code, format it for a " + file_type + " file"},
             {"role": "user", "content": prompt}
         ]
     )
 
-    script = response.choices[0].message.content
-    file_name = f"{datetime.now().strftime(FILE_NAME_FORMAT)}.py"
+    text = response.choices[0].message.content
+    file_name = f"{datetime.now().strftime(FILE_NAME_FORMAT)}" + file_type
     full_path = f"{FILE_PATH}{file_name}"
-    with open(full_path, "w") as file:
-        file.write(script)
+
+    if file_type == ".docx":
+        document = Document()
+        document.add_paragraph(text)
+        document.save(full_path)
+    else:
+        with open(full_path, "w") as file:
+            file.write(text)
 
     return full_path
 
@@ -198,7 +209,7 @@ class Client(discord.Client):
             if tool_calls:
                 available_functions = {
                     "generate_image_with_dalle": generate_image_with_dalle,
-                    "create_python_script": create_python_script,
+                    "create_text_file": create_text_file,
                     "create_voice_message": create_voice_message,
                 }
                 self.conversation_history.append(assistant_response)
@@ -206,9 +217,15 @@ class Client(discord.Client):
                     function_name = tool_call.function.name
                     function_to_call = available_functions[function_name]
                     function_args = json.loads(tool_call.function.arguments)
-                    function_response = function_to_call(
-                        prompt=function_args.get("prompt")
-                    )
+                    if function_name == "create_text_file":
+                        function_response = function_to_call(
+                            prompt=function_args.get("prompt"),
+                            file_type=function_args.get("file_type")
+                        )
+                    else:
+                        function_response = function_to_call(
+                            prompt=function_args.get("prompt")
+                        )
                     self.conversation_history.append(
                         {"tool_call_id": tool_call.id,
                          "role": "tool",
