@@ -188,7 +188,7 @@ class Client(discord.Client):
 
         if message.attachments:
             attachment = message.attachments[0]
-            if attachment.filename.endswith('.py'):
+            if attachment.filename.endswith(('.py', ".txt", ".java", ".rb", ".bas", ".html", ".php", ".js")):
                 file_content = io.BytesIO()
                 await attachment.save(file_content)
                 file_content.seek(0)
