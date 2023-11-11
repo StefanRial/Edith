@@ -1,5 +1,5 @@
 # Edith
-General Purpose OpenAI Discord Bot for generating all kinds of things interactively and intelligently
+General Purpose OpenAI Discord Bot for generating texts, code, files, audio, images and all kinds of things interactively and intelligently.
 Video: https://youtu.be/rx9HhBPh8zg
 
 ## Installation:
