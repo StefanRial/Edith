@@ -121,7 +121,7 @@ def create_text_file(prompt, file_type):
     response = ai.chat.completions.create(
         model="gpt-4-1106-preview",
         messages=[
-            {"role": "system", "content": "Only respond with the generated text or code, format it for a " + file_type + " file"},
+            {"role": "system", "content": "Only respond with the generated text or code, format it for a " + file_type + " file. Don't do any other formatting. Don't use the ``` before and after the text"},
             {"role": "user", "content": prompt}
         ]
     )
