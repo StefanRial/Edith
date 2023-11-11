@@ -188,12 +188,33 @@ class Client(discord.Client):
 
         if message.attachments:
             attachment = message.attachments[0]
-            if attachment.filename.endswith(('.py', ".txt", ".java", ".rb", ".bas", ".html", ".php", ".js")):
+            if attachment.filename.endswith(('.py', ".txt", ".java", ".rb", ".bas", ".html", ".php", ".js", ".md", ".info", ".csv")):
                 file_content = io.BytesIO()
                 await attachment.save(file_content)
                 file_content.seek(0)
                 text_data = file_content.read().decode('utf-8')
                 self.conversation_history.append({"role": "user", "content": input_content + ", existing file content: " + text_data})
+            elif attachment.filename.endswith((".png", ".jpeg", ".jpg")):
+                image_url = attachment.proxy_url
+                response = ai.chat.completions.create(
+                    model="gpt-4-vision-preview",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "Describe the following image"},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": image_url,
+                                    },
+                                },
+                            ],
+                        }
+                    ], max_tokens=1000,
+                ).choices[0].message.content
+                self.conversation_history.append({"role": "system", "content": "The user has sent you an image with his request. You are able to see the image, don't tell the user that you can't see the image. Use the following description of that image to help the user: " + response})
+                self.conversation_history.append({"role": "user", "content": input_content})
         else:
             self.conversation_history.append({"role": "user", "content": input_content})
 
