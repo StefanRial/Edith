@@ -84,6 +84,10 @@ tools = [
                     "prompt": {
                         "type": "string",
                         "description": "what the voice message should say"
+                    },
+                    "voice": {
+                        "type": "string",
+                        "description": "The voice to use. Pick one, ordered from high to low pitch. Male voices: fable, echo, onyx - Female voices: nova, shimmer, alloy"
                     }
                 },
                 "required": ["prompt"],
@@ -102,10 +106,10 @@ def download_image(url: str):
     return file_name
 
 
-def create_voice_message(prompt):
+def create_voice_message(prompt, voice):
     response = ai.audio.speech.create(
         model="tts-1-hd",
-        voice="nova",
+        voice=voice,
         input=prompt
     )
 
@@ -221,6 +225,11 @@ class Client(discord.Client):
                         function_response = function_to_call(
                             prompt=function_args.get("prompt"),
                             file_type=function_args.get("file_type")
+                        )
+                    elif function_name == "create_voice_message":
+                        function_response = function_to_call(
+                            prompt=function_args.get("prompt"),
+                            voice=function_args.get("voice")
                         )
                     else:
                         function_response = function_to_call(
