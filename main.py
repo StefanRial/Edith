@@ -90,7 +90,7 @@ tools = [
                         "description": "The voice to use. Pick one, ordered from high to low pitch. Male voices: fable, echo, onyx - Female voices: nova, shimmer, alloy"
                     }
                 },
-                "required": ["prompt"],
+                "required": ["prompt", "voice"],
             },
         },
     }
