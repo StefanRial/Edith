@@ -56,13 +56,13 @@ tools = [
         "type": "function",
         "function": {
             "name": "create_text_file",
-            "description": "creates and returns a text file. Used for documents, texts or code/script files",
+            "description": "Creates and returns a text file with the provided content. Used for documents, texts or code/script files",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "prompt": {
+                    "content": {
                         "type": "string",
-                        "description": "prompt for the text to be created"
+                        "description": "The text content for the file."
                     },
                     "file_type": {
                         "type": "string",
@@ -107,6 +107,7 @@ def download_image(url: str):
 
 
 def create_voice_message(prompt, voice):
+    print("Creating Voice Message with prompt: " + prompt)
     response = ai.audio.speech.create(
         model="tts-1-hd",
         voice=voice,
@@ -121,16 +122,24 @@ def create_voice_message(prompt, voice):
     return full_path
 
 
-def create_text_file(prompt, file_type):
+def create_text_file(content, file_type):
+
+    if content is None or file_type is None:
+        return
+
+    if file_type[0] is not ".":
+        file_type = "." + file_type
+
     response = ai.chat.completions.create(
         model="gpt-4-1106-preview",
         messages=[
-            {"role": "system", "content": "Only respond with the generated text or code, format it for a " + file_type + " file. Don't do any other formatting. Don't use the ``` before and after the text"},
-            {"role": "user", "content": prompt}
-        ]
-    )
+            {"role": "system", "content": "The user gives you a text. Format and return that text for a " + file_type + " file. Do not generate or return anything else."},
+            {"role": "user", "content": content}
+        ],
+        max_tokens=4096
+    ).choices[0].message.content
 
-    text = response.choices[0].message.content
+    text = response
     file_name = f"{datetime.now().strftime(FILE_NAME_FORMAT)}" + file_type
     full_path = f"{FILE_PATH}{file_name}"
 
@@ -152,6 +161,7 @@ def trim_conversation_history(history, max_length=int(HISTORY_LENGTH)):
 
 
 def generate_image_with_dalle(prompt):
+    print("Creating image with prompt: " + prompt)
     response = ai.images.generate(
         prompt = prompt,
         model = "dall-e-3",
@@ -201,7 +211,8 @@ class Client(discord.Client):
                         {
                             "role": "user",
                             "content": [
-                                {"type": "text", "text": "Describe the following image"},
+                                {"type": "text",
+                                 "text": "Describe the following image"},
                                 {
                                     "type": "image_url",
                                     "image_url": {
@@ -210,7 +221,7 @@ class Client(discord.Client):
                                 },
                             ],
                         }
-                    ], max_tokens=1000,
+                    ], max_tokens=4096,
                 ).choices[0].message.content
                 self.conversation_history.append({"role": "system", "content": "The user has sent you an image with his request. You are able to see the image, don't tell the user that you can't see the image. Use the following description of that image to help the user: " + response})
         self.conversation_history.append({"role": "user", "content": input_content})
@@ -221,7 +232,8 @@ class Client(discord.Client):
                 model="gpt-4-1106-preview",
                 messages=self.conversation_history,
                 tools=tools,
-                tool_choice="auto"
+                tool_choice="auto",
+                max_tokens=4096
             )
 
             assistant_response = response.choices[0].message
@@ -233,37 +245,40 @@ class Client(discord.Client):
                     "create_text_file": create_text_file,
                     "create_voice_message": create_voice_message,
                 }
-                self.conversation_history.append(assistant_response)
                 for tool_call in tool_calls:
+                    if assistant_response.content is None:
+                        assistant_response.content = ""
+                    self.conversation_history.append({"role": "assistant", "content": assistant_response.content})
                     function_name = tool_call.function.name
                     function_to_call = available_functions[function_name]
                     function_args = json.loads(tool_call.function.arguments)
-                    if function_name == "create_text_file":
-                        function_response = function_to_call(
-                            prompt=function_args.get("prompt"),
-                            file_type=function_args.get("file_type")
+                    if function_name in available_functions.keys():
+                        if function_name == "create_text_file":
+                            function_response = function_to_call(
+                                content=function_args.get("content"),
+                                file_type=function_args.get("file_type")
+                            )
+                        elif function_name == "create_voice_message":
+                            function_response = function_to_call(
+                                prompt=function_args.get("prompt"),
+                                voice=function_args.get("voice")
+                            )
+                        else:
+                            function_response = function_to_call(
+                                prompt=function_args.get("prompt")
+                            )
+                        self.conversation_history.append(
+                            {"role": "system",
+                             "content": "The file has been created and is attached to your next message"
+                             }
                         )
-                    elif function_name == "create_voice_message":
-                        function_response = function_to_call(
-                            prompt=function_args.get("prompt"),
-                            voice=function_args.get("voice")
-                        )
-                    else:
-                        function_response = function_to_call(
-                            prompt=function_args.get("prompt")
-                        )
-                    self.conversation_history.append(
-                        {"tool_call_id": tool_call.id,
-                         "role": "tool",
-                         "name": function_name,
-                         "content": "The file has been created and is attached to your next message"
-                         }
-                    )
-                    embed_files.append(discord.File(function_response))
+                        if function_response is not None:
+                            embed_files.append(discord.File(function_response))
 
                 response = ai.chat.completions.create(
                     model="gpt-4-1106-preview",
-                    messages=self.conversation_history
+                    messages=self.conversation_history,
+                    max_tokens=4096
                 )
                 assistant_response = response.choices[0].message
             else:
