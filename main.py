@@ -46,6 +46,10 @@ tools = [
                     "prompt": {
                         "type": "string",
                         "description": "prompt for the image to be generated"
+                    },
+                    "style": {
+                        "type": "string",
+                        "description": "the style for the image. Options: natural, vivid"
                     }
                 },
                 "required": ["prompt"],
@@ -131,7 +135,7 @@ def create_text_file(content, file_type):
         file_type = "." + file_type
 
     response = ai.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4-0125-preview",
         messages=[
             {"role": "system", "content": "The user gives you a text. Format and return that text for a " + file_type + " file. Do not generate or return anything else."},
             {"role": "user", "content": content}
@@ -160,7 +164,7 @@ def trim_conversation_history(history, max_length=int(HISTORY_LENGTH)):
     return history
 
 
-def generate_image_with_dalle(prompt):
+def generate_image_with_dalle(prompt, style):
     print("Creating image with prompt: " + prompt)
     response = ai.images.generate(
         prompt = prompt,
@@ -197,7 +201,7 @@ class Client(discord.Client):
         self.conversation_history.append({"role": "system", "content": f"The user is {author.display_name}. {SYSTEM_MESSAGE}"})
 
         for attachment in message.attachments:
-            if attachment.filename.endswith(('.py', ".txt", ".java", ".rb", ".bas", ".html", ".php", ".js", ".md", ".info", ".csv")):
+            if attachment.filename.endswith(('.py', ".txt", ".java", ".rb", ".bas", ".html", ".php", ".js", ".md", ".info", ".csv", ".cs")):
                 file_content = io.BytesIO()
                 await attachment.save(file_content)
                 file_content.seek(0)
@@ -229,7 +233,7 @@ class Client(discord.Client):
 
         try:
             response = ai.chat.completions.create(
-                model="gpt-4-1106-preview",
+                model="gpt-4-0125-preview",
                 messages=self.conversation_history,
                 tools=tools,
                 tool_choice="auto",
@@ -265,7 +269,8 @@ class Client(discord.Client):
                             )
                         else:
                             function_response = function_to_call(
-                                prompt=function_args.get("prompt")
+                                prompt=function_args.get("prompt"),
+                                style=function_args.get("style")
                             )
                         self.conversation_history.append(
                             {"role": "system",
@@ -276,7 +281,7 @@ class Client(discord.Client):
                             embed_files.append(discord.File(function_response))
 
                 response = ai.chat.completions.create(
-                    model="gpt-4-1106-preview",
+                    model="gpt-4-0125-preview",
                     messages=self.conversation_history,
                     max_tokens=4096
                 )
