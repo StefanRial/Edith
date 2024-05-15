@@ -7,7 +7,7 @@ Video: https://youtu.be/rx9HhBPh8zg
 ### To use this bot, you need 3 things
 1. A discord application and bot user
 2. An OpenAI account with a set up payment plan
-3. Access to the gpt-4-turbo model
+3. Access to the gpt-4o model
 
 ### Install the required packages
 
