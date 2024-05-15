@@ -1,11 +1,12 @@
 """
-This is a discord bot for generating texts, images, files and audio using OpenAI's GPT-4-Turbo, Dall-E 3 and other models
+This is a discord bot for generating texts, images, files and audio using OpenAI's GPT-4o, Dall-E 3 and other models
 
 Author: Stefan Rial
 YouTube: https://youtube.com/@StefanRial
 GitHub: https://https://github.com/StefanRial/AlexBot
 E-Mail: mail.stefanrial@gmail.com
 """
+
 from datetime import datetime
 import io
 import json
@@ -58,17 +59,22 @@ tools = [
     },
     {
         "type": "function",
-        "function": {
+        "function":
+        {
             "name": "create_text_file",
             "description": "Creates and returns a text file with the provided content. Used for documents, texts or code/script files",
-            "parameters": {
+            "parameters":
+            {
                 "type": "object",
-                "properties": {
-                    "content": {
+                "properties":
+                {
+                    "content":
+                    {
                         "type": "string",
                         "description": "The text content for the file."
                     },
-                    "file_type": {
+                    "file_type":
+                    {
                         "type": "string",
                         "description": "file extension to use. Example: .py, .docx, .txt"
                     }
@@ -135,7 +141,7 @@ def create_text_file(content, file_type):
         file_type = "." + file_type
 
     response = ai.chat.completions.create(
-        model="gpt-4-0125-preview",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "The user gives you a text. Format and return that text for a " + file_type + " file. Do not generate or return anything else."},
             {"role": "user", "content": content}
@@ -210,16 +216,18 @@ class Client(discord.Client):
             elif attachment.filename.endswith((".png", ".jpeg", ".jpg")):
                 image_url = attachment.proxy_url
                 response = ai.chat.completions.create(
-                    model="gpt-4-vision-preview",
+                    model="gpt-4o",
                     messages=[
                         {
                             "role": "user",
                             "content": [
-                                {"type": "text",
-                                 "text": "Describe the following image"},
+                                {
+                                    "type": "text",
+                                    "text": "Describe the following image"},
                                 {
                                     "type": "image_url",
-                                    "image_url": {
+                                    "image_url":
+                                    {
                                         "url": image_url,
                                     },
                                 },
@@ -233,7 +241,7 @@ class Client(discord.Client):
 
         try:
             response = ai.chat.completions.create(
-                model="gpt-4-0125-preview",
+                model="gpt-4o",
                 messages=self.conversation_history,
                 tools=tools,
                 tool_choice="auto",
@@ -281,7 +289,7 @@ class Client(discord.Client):
                             embed_files.append(discord.File(function_response))
 
                 response = ai.chat.completions.create(
-                    model="gpt-4-0125-preview",
+                    model="gpt-4o",
                     messages=self.conversation_history,
                     max_tokens=4096
                 )
